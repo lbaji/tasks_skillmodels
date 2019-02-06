@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Jan 25 14:29:11 2019
-
-@author: Laura
-"""
 import numpy as np
 import numba
 
@@ -22,7 +16,6 @@ def fast_log_ces(sigma_points, coeffs, included_positions):
           this has to be the FIRST or LAST element of coeffs.
         * included_positions: 1d array with the positions of the factors that are
           included in the transition equation 
-
     Returns
         * 1d array
     
@@ -37,20 +30,24 @@ def fast_log_ces(sigma_points, coeffs, included_positions):
     if included_positions.shape[0] != sigma_points.shape[1]:
         sigma_points = np.delete(sigma_points, np.where(gammas == 0), 1)
         gammas = gammas[gammas != 0]
+    nfac = sigma_points.shape[1]
     exponents = sigma_points * phi
     x = np.exp(exponents)
-    #x = multiplication(x, gammas, nres)
-    x = np.dot(x, gammas)
+    x = multiplication(x, gammas, nres, nfac)
+    #x = np.dot(x, gammas)
     scaling_factor = 1 / phi
     result = scaling_factor * np.log(x)
 
     return result
     
 @numba.jit(nopython=True)
-def multiplication(x, gammas, nres):
+def multiplication(x, gammas, nres, nfac):
     mult = np.zeros(nres)
     for i in range(nres):
-        mult[i]= np.sum(x[i, :]*gammas)
+        m = 0
+        for j in range(nfac):
+            m += x[i, j]*gammas[j]
+        mult[i] = m
     return mult
 
 result = fast_log_ces(sigma_points, coeffs, included_positions)
